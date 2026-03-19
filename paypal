@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayPal Button</title>
+    <style>
+        body {
+            font-family: system-ui;
+            background: #f06d06;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div id="paypal-container-QDSZBEN239QX2"></div>
+    
+    <!-- PayPal SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id=BAA7yuz8RcYbBmPKg6b5KCanl91vI0-LuiY-DwtLu02YnSFi7kHsTUA0bXYi210n8qhBLYzRFlHv5tdFV4&components=hosted-buttons&enable-funding=venmo&currency=USD"></script>
+    
+    <!-- PayPal Button Render -->
+    <script>
+        paypal.HostedButtons({
+            hostedButtonId: "QDSZBEN239QX2",
+        }).render("#paypal-container-QDSZBEN239QX2")
+    </script>
+</body>
+</html>
