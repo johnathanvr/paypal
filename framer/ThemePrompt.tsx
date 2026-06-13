@@ -266,7 +266,7 @@ interface ThemePromptProps {
     darkButtonBorderColor: string
 }
 
-ThemePrompt.defaultProps = {
+const defaultProps: ThemePromptProps = {
     heading: "Choose your experience",
     description: "Pick the look you prefer. We'll remember it for next time.",
     lightButtonLabel: "Light",
@@ -287,6 +287,8 @@ ThemePrompt.defaultProps = {
     darkButtonTextColor: "#ffffff",
     darkButtonBorderColor: "#111111",
 }
+
+ThemePrompt.defaultProps = defaultProps
 
 addPropertyControls(ThemePrompt, {
     heading: { type: ControlType.String, title: "Heading" },

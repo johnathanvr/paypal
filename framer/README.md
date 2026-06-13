@@ -26,6 +26,9 @@ the choice so the prompt only ever shows once per visitor.
 
 Select the component and use the right-hand panel:
 
+- **Card BG** — the card's fill. Use a **semi-transparent** color (e.g. white at
+  ~55% opacity) so the frosted-glass blur of the page behind it shows through.
+- **Card Blur** — how strongly the homepage behind the card is blurred (px).
 - **Heading Text** / **Body Text** — the text colors you asked to control.
 - **Light/Dark Btn Text** — per-button label colors.
 - Backdrop, Card BG, Card Border, Radius, and per-button BG/Border for full
