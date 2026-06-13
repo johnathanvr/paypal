@@ -12,6 +12,7 @@
 // properties panel via the controls below. No code editing needed to restyle.
 
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import { addPropertyControls, ControlType, RenderTarget } from "framer"
 
 type Theme = "light" | "dark"
@@ -64,6 +65,7 @@ export default function ThemePrompt(props: ThemePromptProps) {
         defaultTheme,
         backdropColor,
         cardBackground,
+        cardBlur,
         cardBorderColor,
         borderRadius,
         headingColor,
@@ -137,13 +139,30 @@ export default function ThemePrompt(props: ThemePromptProps) {
               padding: 24,
           }
 
+    const blur = `blur(${cardBlur}px)`
+
     return (
-        <div style={overlayStyle} role="dialog" aria-modal="true" aria-label={heading}>
-            <div
+        <motion.div
+            style={overlayStyle}
+            role="dialog"
+            aria-modal="true"
+            aria-label={heading}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+        >
+            <motion.div
+                initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 24, delay: 0.05 }}
                 style={{
                     width: "100%",
                     maxWidth: 360,
+                    // Translucent fill + backdrop blur = frosted glass over the
+                    // (blurred) homepage behind it.
                     background: cardBackground,
+                    backdropFilter: blur,
+                    WebkitBackdropFilter: blur,
                     border: `1px solid ${cardBorderColor}`,
                     borderRadius,
                     padding: 28,
@@ -220,8 +239,8 @@ export default function ThemePrompt(props: ThemePromptProps) {
                         {darkButtonLabel}
                     </button>
                 </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     )
 }
 
@@ -234,6 +253,7 @@ interface ThemePromptProps {
     defaultTheme: Theme
     backdropColor: string
     cardBackground: string
+    cardBlur: number
     cardBorderColor: string
     borderRadius: number
     headingColor: string
@@ -253,9 +273,10 @@ ThemePrompt.defaultProps = {
     darkButtonLabel: "Dark",
     storageKey: "site-theme-choice",
     defaultTheme: "light",
-    backdropColor: "rgba(0, 0, 0, 0.55)",
-    cardBackground: "#ffffff",
-    cardBorderColor: "rgba(0, 0, 0, 0.08)",
+    backdropColor: "rgba(0, 0, 0, 0.35)",
+    cardBackground: "rgba(255, 255, 255, 0.55)",
+    cardBlur: 20,
+    cardBorderColor: "rgba(255, 255, 255, 0.35)",
     borderRadius: 16,
     headingColor: "#111111",
     bodyColor: "#555555",
@@ -282,6 +303,15 @@ addPropertyControls(ThemePrompt, {
 
     backdropColor: { type: ControlType.Color, title: "Backdrop" },
     cardBackground: { type: ControlType.Color, title: "Card BG" },
+    cardBlur: {
+        type: ControlType.Number,
+        title: "Card Blur",
+        min: 0,
+        max: 60,
+        step: 1,
+        unit: "px",
+        displayStepper: true,
+    },
     cardBorderColor: { type: ControlType.Color, title: "Card Border" },
     borderRadius: {
         type: ControlType.Number,
