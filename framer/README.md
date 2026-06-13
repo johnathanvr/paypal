@@ -35,6 +35,15 @@ Select the component and use the right-hand panel:
 - **Storage Key** — change this if you ever want every visitor to be re-asked
   (a new key = a fresh "first visit" for everyone).
 
+## Persistent toggle (let visitors change their mind)
+
+[`ThemeToggle.tsx`](./ThemeToggle.tsx) is a small Light/Dark switch you can drop
+anywhere (header, footer, a settings menu). Install it the same way (New Code
+File → paste). It shares the **same Storage Key** and theme attribute as the
+prompt, so changing it updates the page immediately and is remembered on future
+visits. Keep its Storage Key identical to the prompt's (`site-theme-choice` by
+default) so the two stay in sync.
+
 ## Testing
 
 In **Preview** (or on the published site), open dev tools and run
