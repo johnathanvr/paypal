@@ -97,6 +97,7 @@
     input[type=text],
     input[type=password],
     input[type=number],
+    select,
     textarea {
       width: 100%;
       background: var(--surface2);
@@ -110,7 +111,16 @@
       font-family: inherit;
     }
 
-    input:focus, textarea:focus { border-color: var(--accent); }
+    select {
+      appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b90a7' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 34px;
+    }
+
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     textarea { resize: vertical; min-height: 70px; }
 
     .field { margin-bottom: 14px; }
@@ -320,7 +330,7 @@
     </button>
     <div id="settings-body">
       <div class="field" style="margin-top:16px">
-        <label for="endpoint-id">RunPod Endpoint ID</label>
+        <label for="endpoint-id">Custom Endpoint ID <span style="font-size:0.76rem;opacity:0.7">(used when Model = Custom)</span></label>
         <input type="text" id="endpoint-id" placeholder="e.g. abc123xyz456" autocomplete="off">
       </div>
       <div class="field">
@@ -339,6 +349,11 @@
   <!-- Input -->
   <div class="card">
     <div class="card-title">Generate</div>
+
+    <div class="field">
+      <label for="model-select">Model</label>
+      <select id="model-select"></select>
+    </div>
 
     <div id="drop-zone">
       <input type="file" id="file-input" accept="image/*">
@@ -476,6 +491,15 @@ const POLL_MS   = 2000;
 const MAX_POLLS = 90;
 const NSFW_RE   = /nsfw|safety.?check|content.?filter|content.?policy|not safe for work|flagged|inappropriate|explicit/i;
 
+// Sneaky2x/sneaky-imagen serverless endpoints. "Custom" falls back to the
+// Endpoint ID typed in Settings, so any other deployment still works.
+const MODELS = [
+  { id: 'sdxl',   name: 'SDXL · sneaky-imagen',  endpoint: '0myo98ycq9609d' },
+  { id: 'flux',   name: 'Flux · sneaky-imagen',  endpoint: 'pkhj6vgoalhidi' },
+  { id: 'sd15',   name: 'SD 1.5 · sneaky-imagen', endpoint: '4af9cr14yzb15d' },
+  { id: 'custom', name: 'Custom endpoint…',       endpoint: '' },
+];
+
 let imageBase64  = null;
 let currentJobId = null;
 let pollTimer    = null;
@@ -491,6 +515,7 @@ const apiKeyToggle   = $('api-key-toggle');
 const saveBtn        = $('save-settings');
 const settingsToggle = $('settings-toggle');
 const settingsBody   = $('settings-body');
+const modelSelect    = $('model-select');
 const fileInput      = $('file-input');
 const dropZone       = $('drop-zone');
 const dropHint       = $('drop-hint');
@@ -525,21 +550,54 @@ const seedDisplay    = $('seed-display');
 const toastEl        = $('toast');
 const pixelCanvas    = $('pixel-canvas');
 
+// Model selector
+function populateModels() {
+  modelSelect.innerHTML = '';
+  MODELS.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.name;
+    modelSelect.appendChild(opt);
+  });
+}
+
+function currentModel() {
+  return MODELS.find(m => m.id === modelSelect.value) || MODELS[0];
+}
+
+// Resolve the active endpoint ID from the selected model (or the custom field).
+function activeEndpoint() {
+  const m = currentModel();
+  if (m.id === 'custom') return (endpointInput.value || localStorage.getItem('is_endpoint') || '').trim();
+  return m.endpoint;
+}
+
+// The custom Endpoint ID field only matters in Custom mode.
+function syncEndpointField() {
+  endpointInput.disabled = currentModel().id !== 'custom';
+  endpointInput.style.opacity = endpointInput.disabled ? '0.5' : '';
+}
+
 // Settings
 function loadSettings() {
+  populateModels();
+  modelSelect.value    = localStorage.getItem('is_model') || MODELS[0].id;
+  if (!MODELS.some(m => m.id === modelSelect.value)) modelSelect.value = MODELS[0].id;
   endpointInput.value  = localStorage.getItem('is_endpoint') || '';
   apiKeyInput.value    = localStorage.getItem('is_apikey')   || '';
   artisticMode.checked = localStorage.getItem('is_artistic') !== 'false';
   updateArtisticBadge();
-  (endpointInput.value && apiKeyInput.value) ? closeSettings() : openSettings();
+  syncEndpointField();
+  (activeEndpoint() && apiKeyInput.value) ? closeSettings() : openSettings();
 }
 
 function saveSettings() {
+  localStorage.setItem('is_model',    modelSelect.value);
   localStorage.setItem('is_endpoint', endpointInput.value.trim());
   localStorage.setItem('is_apikey',   apiKeyInput.value.trim());
   localStorage.setItem('is_artistic', artisticMode.checked);
   showToast('Settings saved');
-  if (endpointInput.value.trim() && apiKeyInput.value.trim()) closeSettings();
+  if (activeEndpoint() && apiKeyInput.value.trim()) closeSettings();
 }
 
 function openSettings() {
@@ -766,10 +824,15 @@ function resetToIdle() {
 
 // Generate
 async function generate() {
-  const endpointId = (endpointInput.value || localStorage.getItem('is_endpoint') || '').trim();
+  const endpointId = activeEndpoint();
   const apiKey     = (apiKeyInput.value   || localStorage.getItem('is_apikey')   || '').trim();
 
-  if (!endpointId || !apiKey) { openSettings(); showToast('Enter Endpoint ID and API key first'); return; }
+  if (!endpointId) {
+    openSettings();
+    showToast(currentModel().id === 'custom' ? 'Enter a Custom Endpoint ID' : 'No endpoint for this model');
+    return;
+  }
+  if (!apiKey) { openSettings(); showToast('Enter your API key first'); return; }
 
   if (!promptEl.value.trim()) {
     promptEl.focus();
@@ -802,6 +865,11 @@ function init() {
     const hidden = apiKeyInput.type === 'password';
     apiKeyInput.type = hidden ? 'text' : 'password';
     apiKeyToggle.textContent = hidden ? 'Hide' : 'Show';
+  });
+
+  modelSelect.addEventListener('change', () => {
+    localStorage.setItem('is_model', modelSelect.value);
+    syncEndpointField();
   });
 
   saveBtn.addEventListener('click', saveSettings);
