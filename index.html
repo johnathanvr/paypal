@@ -597,6 +597,7 @@ function buildPayload() {
     guidance_scale:      parseFloat(guidanceEl.value)  || 7.5,
     width:               parseInt(widthEl.value,   10) || 512,
     height:              parseInt(heightEl.value,  10) || 512,
+    seed,
   };
 
   if (imageBase64) params.strength = parseFloat(strengthEl.value) || 0.75;
@@ -607,7 +608,10 @@ function buildPayload() {
     params.nsfw                  = true;
   }
 
-  const payload = { seed, params };
+  // Send the fields flat inside `input` (the standard RunPod SDXL/Flux/SD
+  // worker schema) AND nested under `params` — so the prompt reaches the
+  // model regardless of which shape this particular worker expects.
+  const payload = { ...params, params: { ...params } };
   if (imageBase64) payload.image = imageBase64;
   return payload;
 }
